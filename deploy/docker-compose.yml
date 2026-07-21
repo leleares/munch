@@ -1,0 +1,51 @@
+# 本地一键起 MySQL + 后端。
+# 用法：cd deploy && docker compose up -d
+# 仅想要数据库、后端用 `go run` 跑：docker compose up -d mysql
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: munch-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: munch123
+      MYSQL_DATABASE: munch
+      TZ: Asia/Shanghai
+    ports:
+      - "3306:3306"
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - munch-mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-pmunch123"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  server:
+    build:
+      context: ../server
+      dockerfile: Dockerfile
+    container_name: munch-server
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      PORT: "80"
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      DB_USER: root
+      DB_PASSWORD: munch123
+      DB_NAME: munch
+      JWT_SECRET: local-dev-secret
+      STORAGE_DRIVER: local
+      STATIC_DIR: /app/data/uploads
+      PUBLIC_BASE_URL: http://127.0.0.1:8080
+    ports:
+      - "8080:80"
+    volumes:
+      - munch-uploads:/app/data/uploads
+
+volumes:
+  munch-mysql-data:
+  munch-uploads:

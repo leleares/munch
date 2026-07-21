@@ -1,0 +1,59 @@
+/**
+ * 设计 Token —— 来自交接文档《小食记》第四节。
+ * uni-app 会把本文件自动注入到每个组件的 <style lang="scss">，无需手动 @import。
+ * 温馨、克制、原木自然（抹茶绿 sage）风格。
+ */
+
+/* ---------- 颜色 ---------- */
+$page-bg:        #dcd8cc; // 页面外底色（手机外）
+$screen-bg:      #f5f2ea; // 屏幕背景
+$card-bg:        #fbfaf6; // 卡片背景
+$card-border:    #ebe7dd; // 卡片描边
+$divider:        #e9e5db; // 分隔线
+
+$sage:           #8a9a72; // 主色（抹茶绿）
+$sage-deep:      #5f6a48; // 主色深（按压）
+$sage-deep-2:    #7a8560; // 主色深（hover）
+$sage-soft-bg:   #eef0e4; // 浅主色底（chip/胶囊）
+$sage-soft-bd:   #dfe3ce; // 浅主色描边
+
+$text-main:      #3f4636; // 主文字
+$text-title:     #4a5238; // 标题
+$text-sub:       #9a9880; // 次要文字
+$text-sub-2:     #8a9078; // 次要文字 2
+$text-weak:      #b0ad98; // 弱文字/占位
+$text-weak-2:    #b8b49c;
+$text-weak-3:    #c1beac;
+
+$input-border:   #e2ddce; // 输入框描边
+$input-focus:    #8a9a72; // 输入框聚焦
+
+$danger-text:    #c47a6e; // 危险/删除 文字
+$danger-bg:      #fbf0ee; // 危险/删除 底
+$danger-border:  #e8cdc6; // 危险/删除 描边
+
+/* 订单状态 */
+$status-pending-text: #b6873a; // 待接单
+$status-pending-bg:   #f6ecd6;
+$status-cooking-text: #7a8560; // 备菜中
+$status-cooking-bg:   #eef0e4;
+$status-served-text:  #a8a596; // 已上菜
+$status-served-bg:    #eeece5;
+
+/* 遮罩 */
+$mask: rgba(50, 54, 40, 0.4);
+
+/* ---------- 圆角（rpx，1px≈2rpx） ---------- */
+$radius-card:   32rpx; // 卡片 16px
+$radius-thumb:  24rpx; // 图标缩略图 11-14px
+$radius-chip:   26rpx; // chip 13px
+$radius-btn:    28rpx; // 按钮 14px
+$radius-pill:   44rpx; // 胶囊 20-22px
+
+/* ---------- 阴影 ---------- */
+$shadow-card: 0 10rpx 32rpx rgba(217, 123, 108, 0.10);
+$shadow-fab:  0 16rpx 36rpx rgba(80, 90, 60, 0.30);
+
+/* ---------- 间距 ---------- */
+$page-pad:  36rpx; // 页面左右内边距 18px
+$card-pad:  28rpx; // 卡片内边距 14px

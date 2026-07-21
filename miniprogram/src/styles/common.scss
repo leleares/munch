@@ -1,0 +1,83 @@
+/**
+ * 通用样式片段：卡片、chip、按钮、状态徽标等复用类。
+ * uni.scss 里的 token 变量已全局注入，这里可直接用。
+ */
+
+/* 卡片 */
+.mc-card {
+  background: $card-bg;
+  border: 2rpx solid $card-border;
+  border-radius: $radius-card;
+  box-shadow: $shadow-card;
+}
+
+/* chip 胶囊（分类/标签） */
+.mc-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 12rpx 28rpx;
+  border-radius: $radius-chip;
+  font-size: 26rpx;
+  color: $text-sub;
+  background: $card-bg;
+  border: 2rpx solid $card-border;
+
+  &.on {
+    color: #fff;
+    background: $sage;
+    border-color: $sage;
+  }
+}
+
+/* 主按钮 */
+.mc-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 92rpx;
+  border-radius: $radius-btn;
+  font-size: 30rpx;
+  color: #fff;
+  background: $sage;
+
+  &:active {
+    background: $sage-deep;
+  }
+
+  &.ghost {
+    color: $sage;
+    background: $sage-soft-bg;
+    border: 2rpx solid $sage-soft-bd;
+  }
+
+  &.danger {
+    color: $danger-text;
+    background: $danger-bg;
+    border: 2rpx solid $danger-border;
+  }
+}
+
+/* 输入框 */
+.mc-input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 3rpx solid $input-border;
+  border-radius: 24rpx;
+  padding: 22rpx 26rpx;
+  font-size: 28rpx;
+  color: $text-main;
+  background: #fff;
+}
+
+/* 订单状态徽标 */
+.mc-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 6rpx 20rpx;
+  border-radius: 24rpx;
+  font-size: 22rpx;
+
+  &.pending { color: $status-pending-text; background: $status-pending-bg; }
+  &.cooking { color: $status-cooking-text; background: $status-cooking-bg; }
+  &.served  { color: $status-served-text;  background: $status-served-bg; }
+}

@@ -1,0 +1,49 @@
+{
+  "pages": [
+    {
+      "path": "pages/menu/menu",
+      "style": { "navigationBarTitleText": "小食记" }
+    },
+    {
+      "path": "pages/add/add",
+      "style": { "navigationBarTitleText": "加一道新菜" }
+    },
+    {
+      "path": "pages/orders/orders",
+      "style": { "navigationBarTitleText": "点菜记录" }
+    },
+    {
+      "path": "pages/detail/detail",
+      "style": { "navigationBarTitleText": "菜品详情" }
+    },
+    {
+      "path": "pages/done/done",
+      "style": { "navigationBarTitleText": "下单成功" }
+    },
+    {
+      "path": "pages/chef/chef",
+      "style": { "navigationBarTitleText": "大厨端" }
+    },
+    {
+      "path": "pages/bind/bind",
+      "style": { "navigationBarTitleText": "情侣空间", "navigationStyle": "default" }
+    }
+  ],
+  "tabBar": {
+    "color": "#9a9880",
+    "selectedColor": "#8a9a72",
+    "backgroundColor": "#fbfaf6",
+    "borderStyle": "white",
+    "list": [
+      { "pagePath": "pages/menu/menu", "text": "点菜" },
+      { "pagePath": "pages/add/add", "text": "加新菜" },
+      { "pagePath": "pages/orders/orders", "text": "记录" }
+    ]
+  },
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "小食记",
+    "navigationBarBackgroundColor": "#f5f2ea",
+    "backgroundColor": "#f5f2ea"
+  }
+}

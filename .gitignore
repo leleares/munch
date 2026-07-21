@@ -1,0 +1,15 @@
+# ---- 通用 ----
+.DS_Store
+*.log
+
+# ---- 后端 Go ----
+server/.env
+server/data/
+server/tmp/
+server/munch-server
+
+# ---- 前端 uni-app ----
+miniprogram/node_modules/
+miniprogram/dist/
+miniprogram/unpackage/
+miniprogram/.hbuilderx/
