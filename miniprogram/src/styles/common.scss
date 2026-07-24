@@ -57,13 +57,15 @@
   }
 }
 
-/* 输入框 */
+/* 输入框：显式高度 + 只留左右内边距，避免小程序 <input> 文字被竖直裁切。
+   多行 <textarea> 会在各自样式里覆盖 height 并补回上下内边距。 */
 .mc-input {
   width: 100%;
   box-sizing: border-box;
+  height: 88rpx;
+  padding: 0 26rpx;
   border: 3rpx solid $input-border;
   border-radius: 24rpx;
-  padding: 22rpx 26rpx;
   font-size: 28rpx;
   color: $text-main;
   background: #fff;

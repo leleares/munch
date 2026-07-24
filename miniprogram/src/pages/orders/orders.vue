@@ -75,7 +75,7 @@ function fmtTime(t) {
     <!-- 买菜清单 -->
     <view v-else-if="tab === 'shop'" class="pane">
       <view class="shop-add">
-        <input class="mc-input" v-model="shopText" placeholder="要买点什么？" @confirm="addShop" />
+        <input class="mc-input" :value="shopText" @input="shopText = $event.detail.value" placeholder="要买点什么？" @confirm="addShop" />
         <view class="mc-btn add-btn" @tap="addShop">加</view>
       </view>
       <view class="shop-list">

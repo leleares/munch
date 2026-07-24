@@ -14,8 +14,16 @@ export const CLOUD_ENV = "";
 export const CLOUD_SERVICE = "munch-server";
 
 // H5 / 本地联调时的后端地址（USE_CLOUD_CONTAINER=false 时生效）。
-// 本地：go run 起在 8080；或 docker compose 映射的 8080。
-export const API_BASE_URL = "http://127.0.0.1:8080";
+// 本地：go run / docker compose 都映射到宿主机 18090（8080 被 nginx 占用）。
+export const API_BASE_URL = "http://127.0.0.1:18090";
 
 // 所有接口的统一前缀
 export const API_PREFIX = "/api";
+
+// ---- 字体：霞鹜文楷（设计稿指定）----
+// 小程序不能用 CSS @font-face 加载网络字体，必须走 loadFontFace，且只支持 woff/woff2/ttf。
+// 这里用的是子集化后的一级常用字（约 971KB），由后端 /assets 提供。
+// 上线后建议把字体传到 COS/CDN，把 FONT_URL 换成那个 https 地址，
+// 并在小程序后台把该域名加进「downloadFile 合法域名」，否则真机加载不到。
+export const FONT_FAMILY = "LXGW WenKai TC";
+export const FONT_URL = API_BASE_URL + "/assets/fonts/lxgw-wenkai-tc-subset.woff2";

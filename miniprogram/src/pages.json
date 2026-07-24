@@ -35,9 +35,24 @@
     "backgroundColor": "#fbfaf6",
     "borderStyle": "white",
     "list": [
-      { "pagePath": "pages/menu/menu", "text": "点菜" },
-      { "pagePath": "pages/add/add", "text": "加新菜" },
-      { "pagePath": "pages/orders/orders", "text": "记录" }
+      {
+        "pagePath": "pages/menu/menu",
+        "text": "点菜",
+        "iconPath": "static/icons/tab-menu-inactive.png",
+        "selectedIconPath": "static/icons/tab-menu-active.png"
+      },
+      {
+        "pagePath": "pages/add/add",
+        "text": "加新菜",
+        "iconPath": "static/icons/tab-add-inactive.png",
+        "selectedIconPath": "static/icons/tab-add-active.png"
+      },
+      {
+        "pagePath": "pages/orders/orders",
+        "text": "记录",
+        "iconPath": "static/icons/tab-records-inactive.png",
+        "selectedIconPath": "static/icons/tab-records-active.png"
+      }
     ]
   },
   "globalStyle": {

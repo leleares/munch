@@ -53,11 +53,11 @@ async function onJoin() {
     <view class="mc-card panel">
       <template v-if="tab === 'create'">
         <text class="label">给你们的小空间起个名字</text>
-        <input class="mc-input" v-model="coupleName" placeholder="我们的小食记" />
+        <input class="mc-input" :value="coupleName" @input="coupleName = $event.detail.value" placeholder="我们的小食记" />
       </template>
       <template v-else>
         <text class="label">输入对方给你的邀请码</text>
-        <input class="mc-input code" v-model="inviteCode" placeholder="6 位邀请码" maxlength="6" />
+        <input class="mc-input code" :value="inviteCode" @input="inviteCode = $event.detail.value" placeholder="6 位邀请码" maxlength="6" />
       </template>
 
       <text class="label mt">我是</text>

@@ -25,6 +25,8 @@ RUN apk add --no-cache ca-certificates tzdata \
     && echo "Asia/Shanghai" > /etc/timezone
 
 COPY --from=builder /munch-server /app/munch-server
+# 内置静态资源（字体等），由 /assets 路由提供访问
+COPY assets /app/assets
 
 # 微信云托管默认要求监听 80
 ENV PORT=80

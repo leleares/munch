@@ -60,11 +60,11 @@ cd deploy && docker compose up -d mysql
 # 2) 配置环境变量
 cd ../server && cp .env.example .env   # 按需改端口/密码
 
-# 3) 跑服务（默认读 .env，监听 8080）
+# 3) 跑服务（默认读 .env，监听 18090；本机 8080 被 nginx 占用）
 go run ./cmd/api
 ```
 
-健康检查：`curl http://127.0.0.1:8080/health` → `{"status":"ok"}`
+健康检查：`curl http://127.0.0.1:18090/health` → `{"status":"ok"}`
 
 > 本地无微信环境也能联调：登录接口支持直接传 `{"openid":"..."}` 造用户（见 `POST /api/login`）。
 

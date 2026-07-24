@@ -54,7 +54,7 @@ function addToCart() {
       </view>
 
       <text class="label">忌口 / 悄悄话</text>
-      <textarea class="mc-input area" v-model="forbid" placeholder="不要香菜、少放盐、多给点辣…写给大厨看 🌿" />
+      <textarea class="mc-input area" :value="forbid" @input="forbid = $event.detail.value" placeholder="不要香菜、少放盐、多给点辣…写给大厨看 🌿" />
     </view>
 
     <view class="bar">
@@ -72,7 +72,7 @@ function addToCart() {
 .desc { display: block; font-size: 26rpx; color: $text-sub; margin-top: 12rpx; }
 .label { display: block; font-size: 28rpx; color: $text-title; font-weight: 700; margin: 36rpx 0 16rpx; }
 .chips { display: flex; gap: 16rpx; flex-wrap: wrap; }
-.area { height: 180rpx; }
+.area { height: 180rpx; padding: 22rpx 26rpx; line-height: 1.5; }
 .bar { padding: 20rpx $page-pad calc(20rpx + env(safe-area-inset-bottom)); }
 .mc-btn.full { width: 100%; }
 </style>

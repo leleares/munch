@@ -20,10 +20,21 @@ function fmtTime(t) {
   const p = (n) => String(n).padStart(2, '0')
   return `${d.getMonth() + 1}月${d.getDate()}日 ${p(d.getHours())}:${p(d.getMinutes())}`
 }
+
+// 切回点菜端（menu 是 tab 页，用 switchTab）
+function goGuest() {
+  uni.switchTab({ url: '/pages/menu/menu' })
+}
 </script>
 
 <template>
   <view class="page">
+    <!-- 切回点菜端 FAB -->
+    <view class="fab" @tap="goGuest">
+      <image class="fab-icon" src="/static/icons/fab-bowl-white.png" mode="aspectFit" />
+      <text class="fab-label">点菜端</text>
+    </view>
+
     <view class="head">
       <text class="title">收到的点单</text>
       <text v-if="order.pendingCount" class="badge">{{ order.pendingCount }} 桌待处理</text>
@@ -52,7 +63,18 @@ function fmtTime(t) {
 </template>
 
 <style lang="scss" scoped>
-.page { padding: 24rpx $page-pad; }
+.page { padding: 24rpx $page-pad; position: relative; }
+
+/* 切端悬浮按钮（与点菜端同款） */
+.fab {
+  position: fixed; top: 20rpx; right: 24rpx; z-index: 50;
+  width: 104rpx; height: 104rpx; border-radius: 28rpx;
+  background: $sage; box-shadow: $shadow-fab;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.fab-icon { width: 46rpx; height: 46rpx; }
+.fab-label { font-size: 18rpx; color: #fff; margin-top: 4rpx; }
+
 .head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24rpx; }
 .title { font-size: 40rpx; font-weight: 700; color: $text-title; }
 .badge { font-size: 22rpx; color: $status-pending-text; background: $status-pending-bg; padding: 8rpx 20rpx; border-radius: 24rpx; }

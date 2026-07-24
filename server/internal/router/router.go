@@ -27,6 +27,10 @@ func Setup(db *gorm.DB, cfg *config.Config, h *handler.Handler) *gin.Engine {
 	// 本地磁盘存储时，图片通过 /static 提供访问
 	r.Static("/static", cfg.StaticDir)
 
+	// 内置静态资源（霞鹜文楷子集字体等），供小程序 loadFontFace 拉取。
+	// 上线后建议把字体传到 COS/CDN，前端 FONT_URL 改指过去，减轻服务压力。
+	r.Static("/assets", "./assets")
+
 	api := r.Group("/api")
 	{
 		// 登录无需鉴权

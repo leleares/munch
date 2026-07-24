@@ -3,6 +3,27 @@ import { api } from '../api'
 import { getToken, setToken, clearToken } from '../api/request'
 import { USE_CLOUD_CONTAINER } from '../config'
 
+/**
+ * 本地开发用的稳定 openid：每个安装/设备生成一个并持久化。
+ * 这样 H5 浏览器、微信开发者工具、不同真机各自是独立用户——
+ * 一个客户端建情侣空间拿邀请码，另一个客户端加入，即可本地联调两个角色。
+ * （清缓存/清数据缓存会重置成新用户，回到绑定页。）
+ */
+function devOpenId() {
+  const KEY = 'munch_dev_openid'
+  let id = ''
+  try {
+    id = uni.getStorageSync(KEY)
+  } catch (e) {}
+  if (!id) {
+    id = 'dev-' + Date.now() + '-' + Math.floor(Math.random() * 1e6)
+    try {
+      uni.setStorageSync(KEY, id)
+    } catch (e) {}
+  }
+  return id
+}
+
 export const useUserStore = defineStore('user', {
   state: () => ({
     user: null, // { id, nickname, role, coupleId, ... }
@@ -15,8 +36,9 @@ export const useUserStore = defineStore('user', {
   actions: {
     /**
      * 启动流程：确保拿到用户身份。
-     * - 微信端（callContainer）：openid 由平台注入，直接拉 /profile。
-     * - H5 / 本地：用 token 或 dev openid 登录后拉 /profile。
+     * - 已接微信云托管（USE_CLOUD_CONTAINER=true）：openid 由平台注入，直接拉 /profile。
+     * - 本地开发（H5，或未接云托管的微信开发者工具）：用稳定的 dev openid 登录，
+     *   免 appid/secret 与云环境，直接把功能跑通。
      */
     async bootstrap() {
       try {
@@ -26,49 +48,22 @@ export const useUserStore = defineStore('user', {
           this.ready = true
           return
         }
-        // 非云调用的微信端：走 wx.login 换 code 登录
-        await this.wxLogin()
-        this.ready = true
-        return
         // #endif
 
-        // #ifndef MP-WEIXIN
-        if (!getToken()) {
-          // H5 本地联调：用一个固定 dev openid 造用户，免真机微信环境
-          const { token, user } = await api.login({ openid: 'h5-dev-openid', nickname: '亲爱的' })
+        // 本地开发：有 token 就续用，否则用 dev openid 登录换 token
+        if (getToken()) {
+          this.user = await api.profile()
+        } else {
+          const { token, user } = await api.login({ openid: devOpenId(), nickname: '亲爱的' })
           setToken(token)
           this.user = user
-        } else {
-          this.user = await api.profile()
         }
         this.ready = true
-        // #endif
       } catch (e) {
         this.ready = true
         console.warn('[bootstrap]', e.message)
       }
     },
-
-    // #ifdef MP-WEIXIN
-    wxLogin() {
-      return new Promise((resolve, reject) => {
-        uni.login({
-          provider: 'weixin',
-          success: async ({ code }) => {
-            try {
-              const { token, user } = await api.login({ code })
-              setToken(token)
-              this.user = user
-              resolve()
-            } catch (e) {
-              reject(e)
-            }
-          },
-          fail: reject,
-        })
-      })
-    },
-    // #endif
 
     async refreshProfile() {
       this.user = await api.profile()

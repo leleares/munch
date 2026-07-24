@@ -20,9 +20,12 @@ const iconEmoji = ref('')
 const imageUrl = ref('')
 const addingGroup = ref(false)
 const newGroup = ref('')
+// 长按分组进入删除模式：所有分组 tag 右侧出现 × ，点 × 二次确认后删除
+const groupEditMode = ref(false)
 
 onShow(async () => {
   if (!user.hasCouple) { uni.reLaunch({ url: '/pages/bind/bind' }); return }
+  groupEditMode.value = false // 每次进页面都退出删除模式，避免误删
   if (!menu.groups.length) await menu.loadAll()
 
   if (menu.editingId) {
@@ -53,6 +56,7 @@ function resetForm() {
   imageUrl.value = ''
   addingGroup.value = false
   newGroup.value = ''
+  groupEditMode.value = false
 }
 
 function pickIcon(i) {
@@ -90,6 +94,35 @@ function choosePhoto() {
         fail: () => uni.showToast({ title: '上传失败', icon: 'none' }),
         complete: () => uni.hideLoading(),
       })
+    },
+  })
+}
+
+function enterGroupEdit() {
+  groupEditMode.value = true
+  addingGroup.value = false
+  uni.vibrateShort && uni.vibrateShort({ fail: () => {} })
+}
+
+function confirmDelGroup(g) {
+  uni.showModal({
+    title: '删除分组',
+    content: `确定删除「${g.name}」？组里的菜会移到其它分组。`,
+    confirmText: '删除',
+    confirmColor: '#c47a6e',
+    success: async ({ confirm }) => {
+      if (!confirm) return
+      try {
+        const res = await menu.removeGroup(g.id)
+        // 删掉的正是表单当前选中的分组，就跟到后端指定的 fallback 上
+        if (groupId.value === g.id) {
+          groupId.value = (res && res.fallbackGroupId) || (menu.groups[0] && menu.groups[0].id) || null
+        }
+        uni.showToast({ title: '分组已删除', icon: 'none' })
+      } catch (e) {
+        // 后端会拦「至少保留一个分组」
+        uni.showToast({ title: e.message, icon: 'none' })
+      }
     },
   })
 }
@@ -153,12 +186,13 @@ const spices = ['不辣', '微辣', '中辣', '重辣']
     <text class="h1">{{ editId ? '编辑菜品' : '加一道新菜' }}</text>
 
     <text class="label">菜名</text>
-    <input class="mc-input" v-model="name" placeholder="这道菜叫什么？" />
+    <input class="mc-input" :value="name" @input="name = $event.detail.value" placeholder="这道菜叫什么？" />
 
     <text class="label">配图</text>
     <view class="photo-row">
-      <view class="upload" @tap="choosePhoto">
+      <view class="upload" :class="{ filled: imageUrl || iconEmoji }" @tap="choosePhoto">
         <view v-if="imageUrl" class="preview" :style="`background-image:url(${imageUrl})`" />
+        <text v-else-if="iconEmoji" class="preview-emoji">{{ iconEmoji }}</text>
         <text v-else class="upload-txt">＋ 上传照片</text>
       </view>
       <view class="icons">
@@ -168,13 +202,27 @@ const spices = ['不辣', '微辣', '中辣', '重辣']
 
     <text class="label">分组</text>
     <view class="chips">
-      <text v-for="g in menu.groups" :key="g.id" class="mc-chip" :class="{ on: groupId === g.id }" @tap="groupId = g.id">{{ g.name }}</text>
-      <text v-if="!addingGroup" class="mc-chip ghost" @tap="addingGroup = true">＋新建分组</text>
-      <view v-else class="newgroup">
-        <input class="mc-input sm" v-model="newGroup" placeholder="分组名" @confirm="confirmNewGroup" />
-        <text class="ok" @tap="confirmNewGroup">✓</text>
+      <view
+        v-for="g in menu.groups" :key="g.id"
+        class="mc-chip grp" :class="{ on: groupId === g.id }"
+        @tap="groupId = g.id"
+        @longpress="enterGroupEdit"
+      >
+        <text>{{ g.name }}</text>
+        <text v-if="groupEditMode" class="grp-del" @tap.stop="confirmDelGroup(g)">×</text>
       </view>
+
+      <!-- 删除模式下只留「完成」；平时才显示「＋新建分组」 -->
+      <text v-if="groupEditMode" class="mc-chip done" @tap="groupEditMode = false">完成</text>
+      <template v-else>
+        <text v-if="!addingGroup" class="mc-chip ghost" @tap="addingGroup = true">＋新建分组</text>
+        <view v-else class="newgroup">
+          <input class="mc-input sm" :value="newGroup" @input="newGroup = $event.detail.value" placeholder="分组名" @confirm="confirmNewGroup" />
+          <text class="ok" @tap="confirmNewGroup">✓</text>
+        </view>
+      </template>
     </view>
+    <text v-if="groupEditMode" class="grp-tip">点 × 删除分组，组里的菜会移到其它分组</text>
 
     <text class="label">辣度</text>
     <view class="chips">
@@ -182,7 +230,7 @@ const spices = ['不辣', '微辣', '中辣', '重辣']
     </view>
 
     <text class="label">一句话描述</text>
-    <input class="mc-input" v-model="desc" placeholder="你上周夸过好吃的那道 ✨" />
+    <input class="mc-input" :value="desc" @input="desc = $event.detail.value" placeholder="你上周夸过好吃的那道 ✨" />
 
     <view class="mc-btn full" @tap="submit">{{ editId ? '保存修改 ✏️' : '加进菜单 🌿' }}</view>
     <view v-if="editId" class="mc-btn danger full mt" @tap="del">删除这道菜</view>
@@ -196,13 +244,22 @@ const spices = ['不辣', '微辣', '中辣', '重辣']
 .label { display: block; font-size: 28rpx; color: $text-title; font-weight: 700; margin: 30rpx 0 14rpx; }
 .photo-row { display: flex; gap: 20rpx; }
 .upload { width: 160rpx; height: 160rpx; border-radius: 24rpx; border: 3rpx dashed $input-border; display: flex; align-items: center; justify-content: center; flex-shrink: 0; overflow: hidden; }
+/* 选了图标/照片后：实线描边 + 浅主色底，视觉上表示「已选」 */
+.upload.filled { border-style: solid; border-color: $sage-soft-bd; background: $sage-soft-bg; }
 .upload-txt { font-size: 22rpx; color: $text-weak; }
+.preview-emoji { font-size: 84rpx; line-height: 1; }
 .preview { width: 100%; height: 100%; background-size: cover; background-position: center; }
 .icons { flex: 1; display: flex; flex-wrap: wrap; gap: 12rpx; }
 .icon { width: 72rpx; height: 72rpx; line-height: 72rpx; text-align: center; font-size: 40rpx; border-radius: 18rpx; background: $card-bg; border: 2rpx solid $card-border; }
 .icon.on { background: $sage-soft-bg; border-color: $sage; }
 .chips { display: flex; flex-wrap: wrap; gap: 16rpx; align-items: center; }
 .mc-chip.ghost { color: $sage; border-style: dashed; }
+/* 分组 tag：删除模式下右侧带 × */
+.mc-chip.grp { gap: 12rpx; }
+.grp-del { color: $danger-text; font-size: 32rpx; line-height: 1; padding: 0 2rpx 4rpx; }
+.mc-chip.on .grp-del { color: #fff; }
+.mc-chip.done { color: $sage; background: $sage-soft-bg; border-color: $sage-soft-bd; }
+.grp-tip { display: block; font-size: 22rpx; color: $text-weak; margin-top: 14rpx; }
 .newgroup { display: flex; align-items: center; gap: 10rpx; }
 .mc-input.sm { width: 200rpx; padding: 12rpx 18rpx; }
 .ok { color: $sage; font-size: 36rpx; }

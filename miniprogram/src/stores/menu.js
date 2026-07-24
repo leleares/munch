@@ -75,6 +75,7 @@ export const useMenuStore = defineStore('menu', {
         })
       }
       if (removed && this.cat === removed.name) this.cat = '全部'
+      return res
     },
   },
 })
