@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/joho/godotenv"
 )
@@ -70,7 +71,32 @@ func Load() *Config {
 		COSSecretKey: os.Getenv("COS_SECRET_KEY"),
 		COSBucketURL: os.Getenv("COS_BUCKET_URL"),
 	}
+
+	// 容错：不少人会把 "host:port" 整个填进 DB_HOST，
+	// 那样会和 DBPort 拼成 "host:port:port" 导致解析失败。这里拆开。
+	if host, port, ok := splitHostPort(c.DBHost); ok {
+		c.DBHost = host
+		c.DBPort = port
+	}
 	return c
+}
+
+// splitHostPort 识别 "host:port" 形式，端口必须是纯数字才认。
+func splitHostPort(v string) (host, port string, ok bool) {
+	i := strings.LastIndex(v, ":")
+	if i <= 0 || i == len(v)-1 {
+		return "", "", false
+	}
+	host, port = v[:i], v[i+1:]
+	if strings.Contains(host, ":") {
+		return "", "", false // IPv6 之类，不动
+	}
+	for _, r := range port {
+		if r < '0' || r > '9' {
+			return "", "", false
+		}
+	}
+	return host, port, true
 }
 
 // DSN 返回 GORM 连接 MySQL 用的 data source name。

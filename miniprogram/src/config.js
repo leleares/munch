@@ -5,10 +5,10 @@
 // 是否走微信云托管容器调用（wx.cloud.callContainer）。
 // true：微信端通过云调用后端，平台自动注入 X-WX-OPENID，免备案（推荐）。
 // false：走普通 HTTP 请求（H5 / 本地联调用）。
-export const USE_CLOUD_CONTAINER = false;
+export const USE_CLOUD_CONTAINER = true;
 
-// 微信云托管环境 ID（控制台 → 环境 → 环境ID），部署后填。
-export const CLOUD_ENV = "";
+// 微信云托管环境 ID（控制台 → 环境 → 环境ID）
+export const CLOUD_ENV = "prod-d3gauzkf662e0a7bc";
 
 // 微信云托管服务名（部署 server 时起的服务名），部署后填。
 export const CLOUD_SERVICE = "munch-server";
@@ -26,4 +26,7 @@ export const API_PREFIX = "/api";
 // 上线后建议把字体传到 COS/CDN，把 FONT_URL 换成那个 https 地址，
 // 并在小程序后台把该域名加进「downloadFile 合法域名」，否则真机加载不到。
 export const FONT_FAMILY = "LXGW WenKai TC";
-export const FONT_URL = API_BASE_URL + "/assets/fonts/lxgw-wenkai-tc-subset.woff2";
+// 线上：指向微信云托管服务的公网域名（该域名需加进小程序后台「downloadFile 合法域名」）。
+// 本地开发想切回去，改成 API_BASE_URL + "/assets/fonts/lxgw-wenkai-tc-subset.woff2" 即可。
+export const FONT_URL =
+  "https://munch-server-286616-10-1457919674.sh.run.tcloudbase.com/assets/fonts/lxgw-wenkai-tc-subset.woff2";
