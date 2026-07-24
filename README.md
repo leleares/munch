@@ -84,11 +84,13 @@ npm run dev:mp-weixin   # 产物在 dist/dev/mp-weixin，用微信开发者工�
 
 ## 部署（微信云托管）
 
-1. 微信云托管控制台新建环境 + MySQL 实例（MySQL 连接由平台以 `MYSQL_ADDRESS/USERNAME/PASSWORD` 注入，代码已兼容）。
-2. 新建服务（如 `munch-server`），用仓库 `server/Dockerfile` 构建部署，服务监听 `80`。
-3. 环境变量按需配 `JWT_SECRET`、`STORAGE_DRIVER=cos` 及 `COS_*`（存菜品图）。
-4. 前端 `src/config.js` 填上 `CLOUD_ENV`（环境ID）与 `CLOUD_SERVICE`（服务名），`USE_CLOUD_CONTAINER=true`。
-5. 前端 `src/manifest.json` 填小程序 `appid`，用微信开发者工具上传体验版。
+**完整分步操作手册见 [`docs/DEPLOY.md`](docs/DEPLOY.md)**，含验证点与排错速查。概要：
+
+1. 开通云托管 → 建环境（记环境 ID）→ 建 MySQL 实例 → **手动 `CREATE DATABASE munch`**（平台不会自动建库）。
+2. 新建服务 `munch-server`，构建上下文 `server`、Dockerfile `server/Dockerfile`、监听 `80`。
+3. 配环境变量 `JWT_SECRET`、`DB_NAME=munch`；**`ALLOW_DEV_LOGIN` 绝不能配到线上**。
+4. 开启公网访问 → 域名加进小程序后台 `downloadFile` 合法域名（字体要用）。
+5. 前端 `config.js` 设 `USE_CLOUD_CONTAINER=true` + `CLOUD_ENV` + `CLOUD_SERVICE` + 公网 `FONT_URL`，编译上传体验版。
 
 > `callContainer` 调用免备案；平台自动注入 `X-WX-OPENID`，后端据此识别用户，无需自己做 code2session。
 
@@ -114,13 +116,17 @@ npm run dev:mp-weixin   # 产物在 dist/dev/mp-weixin，用微信开发者工�
 
 ## 已完成 / 待办
 
-**已完成（骨架 + 可运行）**
+**已完成**
 - ✅ 后端全部接口 + 鉴权 + 数据隔离，Docker 化，本地全链路冒烟通过
-- ✅ 前端全部主页面（点菜/详情/加编辑/记录三段/大厨端/下单成功/绑定），编译到 mp-weixin 通过
-- ✅ 设计 token 落地，购物车抽屉、状态机推进、轮询实时、买菜清单、常点、随机推荐
+- ✅ 前端全部页面（点菜/详情/加编辑/记录三段/大厨端/下单成功/绑定）
+- ✅ 设计 token、购物车抽屉、状态机推进、轮询实时、买菜清单、常点
+- ✅ 图标资产接入（TabBar 两态 / 双端 FAB / chevron）
+- ✅ 霞鹜文楷子集化（3894 字 / 971KB）+ `loadFontFace` 接入
+- ✅ 核心动效：转盘老虎机抽奖、加菜飞入购物车弧线（并发）、抽屉 slideUp、弹窗 pop、购物车回弹
+- ✅ 安全：`/login` 裸 openid 后门收口到 `ALLOW_DEV_LOGIN`，默认关闭
 
-**待打磨（对照原型 `docs/design_handoff`）**
-- ⏳ 精细动效：加菜飞入购物车弧线、煮锅加载、转盘抽奖旋转（当前为简化版）
-- ⏳ 微信云托管图片上传接 COS（`server/internal/storage` 留了驱动位；前端 add 页已留上传通道）
-- ⏳ TabBar/FAB 换成设计稿的线性 SVG 图标（当前 TabBar 为纯文字）
+**待补**
+- ⏳ 图片上传接 COS（`server/internal/storage` 留了驱动位；未接前照片存容器磁盘，重部署会丢）
+- ⏳ 煮锅加载动画、自定义 Toast、长按 480ms+震动、记录页 Tab fade
+- ⏳ 标题字重 700（当前只加载 Regular，为伪粗；需再传 Medium 字重）
 - ⏳ 可选：菜名 AI 配图（见交接文档第九节，key 放后端）

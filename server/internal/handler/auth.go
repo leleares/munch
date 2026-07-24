@@ -30,17 +30,29 @@ func (h *Handler) Login(c *gin.Context) {
 		return
 	}
 
-	openid := req.OpenID
-	if req.Code != "" && h.Cfg.WechatAppID != "" {
+	var openid string
+	switch {
+	case req.Code != "" && h.Cfg.WechatAppID != "":
+		// 正规路径：拿小程序 code 去微信换 openid
 		sess, err := service.Code2Session(h.Cfg.WechatAppID, h.Cfg.WechatAppSecret, req.Code)
 		if err != nil {
 			response.Fail(c, response.CodeServer, "微信登录失败："+err.Error())
 			return
 		}
 		openid = sess.OpenID
+
+	case req.OpenID != "":
+		// 开发后门：直接拿裸 openid 造用户。仅在 ALLOW_DEV_LOGIN=true 时开放，
+		// 线上开启等于允许任何人伪造任意身份，务必保持关闭。
+		if !h.Cfg.AllowDevLogin {
+			response.Fail(c, response.CodeForbidden, "该登录方式已禁用")
+			return
+		}
+		openid = req.OpenID
 	}
+
 	if openid == "" {
-		response.Fail(c, response.CodeParamError, "缺少 code（或本地联调用的 openid）")
+		response.Fail(c, response.CodeParamError, "缺少 code")
 		return
 	}
 

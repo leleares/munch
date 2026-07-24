@@ -24,6 +24,10 @@ type Config struct {
 	WechatAppID     string // 小程序 appid（本地 code2session 登录用）
 	WechatAppSecret string // 小程序 secret（本地 code2session 登录用）
 
+	// 是否允许「裸 openid 登录」——本地开发免微信环境的后门。
+	// 生产环境必须为 false，否则任何人都能用任意 openid 伪造身份。
+	AllowDevLogin bool
+
 	// 图片存储：默认 local（落磁盘并通过 /static 提供），可切 cos
 	StorageDriver string
 	StaticDir     string // local 驱动的落盘目录
@@ -54,6 +58,9 @@ func Load() *Config {
 
 		WechatAppID:     os.Getenv("WECHAT_APPID"),
 		WechatAppSecret: os.Getenv("WECHAT_SECRET"),
+
+		// 默认关闭：线上不显式打开就一定是安全的
+		AllowDevLogin: os.Getenv("ALLOW_DEV_LOGIN") == "true",
 
 		StorageDriver: env("STORAGE_DRIVER", "local"),
 		StaticDir:     env("STATIC_DIR", "./data/uploads"),
