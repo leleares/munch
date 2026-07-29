@@ -335,7 +335,7 @@ const spices = ["不辣", "微辣", "中辣", "重辣"];
       class="mc-input area recipe"
       :value="recipe"
       @input="recipe = $event.detail.value"
-      placeholder="随手记下做法步骤，做菜时照着来 🍳&#10;例：1.焯水 2.炒糖色 3.小火炖40分钟"
+      placeholder="随手记下做法步骤，做菜时照着来 🍳"
       :maxlength="-1"
     />
 
