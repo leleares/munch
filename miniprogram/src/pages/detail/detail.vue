@@ -48,6 +48,16 @@ function addToCart() {
       <text class="name">{{ dish.name }}</text>
       <text class="desc">{{ dish.desc }}</text>
 
+      <!-- 菜品级信息：菜谱 / 备注（只读，跟下面点单级的「忌口」区分开）-->
+      <view v-if="dish.recipe" class="info-card">
+        <text class="info-title">🍳 菜谱 / 做法</text>
+        <text class="info-body">{{ dish.recipe }}</text>
+      </view>
+      <view v-if="dish.remark" class="info-card">
+        <text class="info-title">📝 备注</text>
+        <text class="info-body">{{ dish.remark }}</text>
+      </view>
+
       <text class="label">辣度</text>
       <view class="chips">
         <text v-for="(s, i) in spices" :key="i" class="mc-chip" :class="{ on: spice === i }" @tap="spice = i">{{ s }}</text>
@@ -70,6 +80,10 @@ function addToCart() {
 .body { flex: 1; padding: 36rpx $page-pad; }
 .name { display: block; font-size: 44rpx; font-weight: 700; color: $text-title; }
 .desc { display: block; font-size: 26rpx; color: $text-sub; margin-top: 12rpx; }
+/* 菜品级只读信息卡（菜谱/备注）*/
+.info-card { margin-top: 24rpx; padding: 24rpx 26rpx; background: $card-bg; border: 2rpx solid $card-border; border-radius: $radius-card; }
+.info-title { display: block; font-size: 26rpx; font-weight: 700; color: $text-title; }
+.info-body { display: block; margin-top: 12rpx; font-size: 26rpx; color: $text-main; line-height: 1.6; white-space: pre-wrap; }
 .label { display: block; font-size: 28rpx; color: $text-title; font-weight: 700; margin: 36rpx 0 16rpx; }
 .chips { display: flex; gap: 16rpx; flex-wrap: wrap; }
 .area { height: 180rpx; padding: 22rpx 26rpx; line-height: 1.5; }

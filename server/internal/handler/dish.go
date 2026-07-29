@@ -33,6 +33,8 @@ type DishReq struct {
 	GroupID   uint   `json:"groupId"`
 	Spice     int    `json:"spice"`
 	Desc      string `json:"desc"`
+	Recipe    string `json:"recipe"`
+	Remark    string `json:"remark"`
 	ImageURL  string `json:"imageUrl"`
 	IconEmoji string `json:"iconEmoji"`
 	IsFav     *bool  `json:"isFav"`
@@ -51,7 +53,8 @@ func (h *Handler) CreateDish(c *gin.Context) {
 	}
 	dish := model.Dish{
 		CoupleID: cid, Name: req.Name, GroupID: req.GroupID, Spice: req.Spice,
-		Desc: req.Desc, ImageURL: req.ImageURL, IconEmoji: req.IconEmoji,
+		Desc: req.Desc, Recipe: req.Recipe, Remark: req.Remark,
+		ImageURL: req.ImageURL, IconEmoji: req.IconEmoji,
 		CreatedBy: h.user(c).ID,
 	}
 	if req.IsFav != nil {
@@ -83,7 +86,8 @@ func (h *Handler) UpdateDish(c *gin.Context) {
 	}
 	updates := map[string]interface{}{
 		"name": req.Name, "group_id": req.GroupID, "spice": req.Spice,
-		"desc": req.Desc, "image_url": req.ImageURL, "icon_emoji": req.IconEmoji,
+		"desc": req.Desc, "recipe": req.Recipe, "remark": req.Remark,
+		"image_url": req.ImageURL, "icon_emoji": req.IconEmoji,
 	}
 	if req.IsFav != nil {
 		updates["is_fav"] = *req.IsFav

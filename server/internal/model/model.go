@@ -55,6 +55,8 @@ type Dish struct {
 	GroupID   uint   `gorm:"index" json:"groupId"`
 	Spice     int    `json:"spice"` // 0 不辣 / 1 微辣 / 2 中辣 / 3 重辣
 	Desc      string `gorm:"size:255" json:"desc"`
+	Recipe    string `gorm:"type:text" json:"recipe"`    // 菜谱/做法步骤（菜品级，给大厨看）
+	Remark    string `gorm:"size:500" json:"remark"`     // 这道菜的固定备注（菜品级）
 	ImageURL  string `gorm:"size:512" json:"imageUrl"`  // 上传照片时
 	IconEmoji string `gorm:"size:16" json:"iconEmoji"`  // 选 emoji 图标时
 	IsFav     bool   `gorm:"default:false" json:"isFav"` // 是否「常点」
