@@ -2,6 +2,7 @@ package storage
 
 import (
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -19,10 +20,17 @@ type Storage interface {
 func New(cfg *config.Config) Storage {
 	switch cfg.StorageDriver {
 	case "cos":
-		// TODO: 接入腾讯云 COS（github.com/tencentyun/cos-go-sdk-v5）。
-		// 微信云托管里推荐用 COS 存图；配好 COS_* 环境变量后在此返回 cosStorage。
-		// 暂未实现前回退到本地磁盘，保证服务可跑。
-		return newLocal(cfg)
+		if cfg.COSSecretID == "" || cfg.COSSecretKey == "" || cfg.COSBucketURL == "" {
+			log.Println("[storage] STORAGE_DRIVER=cos 但 COS_* 环境变量不全，回退到本地磁盘")
+			return newLocal(cfg)
+		}
+		s, err := newCOS(cfg)
+		if err != nil {
+			log.Printf("[storage] COS 初始化失败，回退到本地磁盘: %v", err)
+			return newLocal(cfg)
+		}
+		log.Println("[storage] 使用腾讯云 COS 存储图片")
+		return s
 	default:
 		return newLocal(cfg)
 	}

@@ -71,7 +71,8 @@ func Setup(db *gorm.DB, cfg *config.Config, h *handler.Handler) *gin.Engine {
 			auth.DELETE("/shop-items/:id", h.DeleteShopItem)
 
 			// 图片上传
-			auth.POST("/upload", h.Upload)
+			auth.POST("/upload", h.Upload)             // multipart（H5/本地）
+			auth.POST("/upload-base64", h.UploadBase64) // base64（云托管 callContainer）
 		}
 	}
 

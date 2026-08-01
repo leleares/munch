@@ -75,12 +75,16 @@ CREATE DATABASE IF NOT EXISTS munch
 |---|---|---|
 | `JWT_SECRET` | 随机长串 | **必填**，别用默认值 |
 | `DB_NAME` | `munch` | 上一步建的库名 |
-| `STORAGE_DRIVER` | `local` | 图片存储，见第六节的限制说明 |
-| `STATIC_DIR` | `/app/data/uploads` | 容器内上传目录 |
-| `PUBLIC_BASE_URL` | 服务公网域名 | 拼图片可访问地址用，没开公网可先留空 |
+| `STORAGE_DRIVER` | `cos` | 图片存 COS（跨端可用）；填 `local` 则落容器磁盘（重部署会丢） |
+| `COS_SECRET_ID` | 子用户 SecretId | `cos` 时必填，见第七节 |
+| `COS_SECRET_KEY` | 子用户 SecretKey | `cos` 时必填，见第七节 |
+| `COS_BUCKET_URL` | 桶访问域名 | `cos` 时必填，如 `https://ares1-1330007488.cos.ap-beijing.myqcloud.com` |
+| `STATIC_DIR` | `/app/data/uploads` | 仅 `local` 驱动用的容器内目录 |
+| `PUBLIC_BASE_URL` | 服务公网域名 | 仅 `local` 驱动拼图片地址用；用 COS 可留空 |
 | ~~`ALLOW_DEV_LOGIN`~~ | **不要配** | 配了就是安全漏洞 |
 
 > `MYSQL_ADDRESS` / `MYSQL_USERNAME` / `MYSQL_PASSWORD` 由平台自动注入，**不用你填**，`config.go` 已兼容读取。
+> COS 变量填不全或初始化失败时，后端会**自动退回本地磁盘**并在日志打印，不会导致服务起不来。
 
 4. 点击部署，等待构建完成。
 
@@ -149,20 +153,52 @@ npm run build:mp-weixin      # 产物在 dist/build/mp-weixin
 
 ---
 
-## 七、已知限制 · 上线前需要你决策
+## 七、图片存储：接入腾讯云 COS
 
-### 🔴 图片上传：COS 尚未接入
+图片走独立 COS 桶（`ares1-1330007488` / `ap-beijing`），web、native、小程序三端都能直接用返回的 URL。上传链路：
 
-当前 `STORAGE_DRIVER=cos` 在代码里**还是回退到本地磁盘**（`storage.go` 里留了 TODO 驱动位）。这意味着：
+```
+小程序：chooseImage(压缩) → base64 → callContainer POST /api/upload-base64
+                                              ↓ 后端 decode
+H5/本地：chooseImage → uploadFile(multipart) → POST /api/upload
+                                              ↓
+                                     Go 后端转存 COS（munch/ 前缀）→ 返回公开 URL
+```
 
-- 上传的菜品照片存在**容器本地磁盘**，**重新部署会丢失**。
+> 为什么小程序走 base64：`callContainer` 是 JSON 通道，不支持 multipart 文件流；而 `uni.uploadFile` 打公网域名又拿不到平台注入的 `X-WX-OPENID`。base64 走 JSON body 两全其美，同时免备案、自动认人。
 
-两个选择：
+### 1. 建子用户密钥（别用主账号密钥）
 
-| 方案 | 说明 |
+SecretId/SecretKey 是**腾讯云账号级全局密钥**，能操作名下所有服务，泄露风险大。推荐：
+
+1. 腾讯云控制台 → **访问管理 CAM → 用户 → 新建用户**（子用户）
+2. 只授权 `ares1-1330007488` 这一个桶的读写（`QcloudCOSDataFullControl`，或用策略生成器精确到该桶）
+3. 拿到该子用户的 **SecretId / SecretKey**
+
+### 2. 桶设为公有读
+
+COS 控制台 → 桶 `ares1-1330007488` → **权限管理 → 公有读私有写**（或配 CDN 域名）。否则返回的图片 URL 打不开。
+
+### 3. 云托管加环境变量
+
+munch-server 服务 → 新版本 → 环境变量：
+
+| 变量 | 值 |
 |---|---|
-| **A. 先只用 emoji 图标**（推荐先这样） | 加新菜时选 emoji，完全不受影响，零额外配置。照片功能暂不用 |
-| **B. 接入腾讯云 COS** | 需要你开通 COS、建桶、给我 `COS_SECRET_ID/KEY/BUCKET_URL`，我把驱动实现补上（约 60 行 + 一个 SDK 依赖） |
+| `STORAGE_DRIVER` | `cos` |
+| `COS_SECRET_ID` | 子用户 SecretId |
+| `COS_SECRET_KEY` | 子用户 SecretKey |
+| `COS_BUCKET_URL` | `https://ares1-1330007488.cos.ap-beijing.myqcloud.com` |
+
+### 4. 小程序后台加 downloadFile 合法域名
+
+开发管理 → 开发设置 → 服务器域名 → **`downloadFile` 合法域名**加：
+`ares1-1330007488.cos.ap-beijing.myqcloud.com`
+否则真机 `<image>` 显示不出图。
+
+**验证**：加新菜 → 上传照片 → 后端日志出现 `[storage] 使用腾讯云 COS 存储图片`；返回的 `imageUrl` 直接在浏览器能打开。
+
+> COS 在**北京**、云托管在**上海**，跨地域走公网上传（非内网），小流量无感知，只是不享受内网免流量。
 
 ### 🟡 其余待补（不影响上线）
 
@@ -195,4 +231,5 @@ npm run build:mp-weixin      # 产物在 dist/build/mp-weixin
 | 接口报「服务不存在」 | `CLOUD_SERVICE` 和云托管服务名不一致 |
 | 字体没生效、控制台报加载失败 | 域名没加进 `downloadFile` 合法域名，或 `FONT_URL` 还指着 `127.0.0.1` |
 | 提示「还没有情侣空间」 | 正常，去绑定页创建或加入 |
-| 上传的照片过一阵没了 | 已知限制，见第七节（容器磁盘非持久） |
+| 上传照片成功但图显示不出 | COS 桶没设公有读，或域名没加进 `downloadFile` 合法域名（第七节 2/4） |
+| 日志显示「回退到本地磁盘」 | COS 变量没填全，或 SecretId/Key 错（第七节 3） |

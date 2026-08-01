@@ -4,7 +4,7 @@ import { onShow } from "@dcloudio/uni-app";
 import { useMenuStore } from "../../stores/menu";
 import { useUserStore } from "../../stores/user";
 import { API_BASE_URL, API_PREFIX, USE_CLOUD_CONTAINER } from "../../config";
-import { getToken } from "../../api/request";
+import { getToken, request } from "../../api/request";
 
 const menu = useMenuStore();
 const user = useUserStore();
@@ -13,11 +13,8 @@ const ICONS = [
   "🍚",
   "🍜",
   "🍲",
-  "🥘",
-  "🍳",
   "🥟",
   "🥬",
-  "🍗",
   "🦐",
   "🐟",
   "🍅",
@@ -25,7 +22,6 @@ const ICONS = [
   "🍆",
   "🥩",
   "🐔",
-  "🫑",
   "🥚",
   "🫛",
 ];
@@ -92,13 +88,42 @@ function pickIcon(i) {
   imageUrl.value = "";
 }
 
-// 上传照片：chooseImage → uploadFile 到 /api/upload
+// 上传照片：
+//  - 云托管：chooseImage(压缩) → 读成 base64 → callContainer 打 /upload-base64（自动带 X-WX-OPENID）
+//  - H5/本地：chooseImage → uploadFile multipart 打 /upload
 function choosePhoto() {
   // #ifdef MP-WEIXIN
   if (USE_CLOUD_CONTAINER) {
-    uni.showToast({
-      title: "云托管上传待接入 COS，先用图标吧 🌿",
-      icon: "none",
+    uni.chooseImage({
+      count: 1,
+      sizeType: ["compressed"],
+      success: (res) => {
+        const filePath = res.tempFilePaths[0];
+        const ext = "." + (filePath.split(".").pop() || "jpg").toLowerCase();
+        uni.showLoading({ title: "上传中…" });
+        uni.getFileSystemManager().readFile({
+          filePath,
+          encoding: "base64",
+          success: async (fr) => {
+            try {
+              const data = await request("/upload-base64", {
+                method: "POST",
+                data: { ext, data: fr.data },
+              });
+              imageUrl.value = data.imageUrl;
+              iconEmoji.value = "";
+            } catch (e) {
+              uni.showToast({ title: e.message || "上传失败", icon: "none" });
+            } finally {
+              uni.hideLoading();
+            }
+          },
+          fail: () => {
+            uni.hideLoading();
+            uni.showToast({ title: "读取图片失败", icon: "none" });
+          },
+        });
+      },
     });
     return;
   }
