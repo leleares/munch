@@ -37,4 +37,7 @@ export const api = {
   createShopItem: (data) => request('/shop-items', { method: 'POST', data }),
   updateShopItem: (id, data) => request(`/shop-items/${id}`, { method: 'PATCH', data }),
   deleteShopItem: (id) => request(`/shop-items/${id}`, { method: 'DELETE' }),
+
+  // COS 临时密钥（小程序直传图片用）
+  cosCredential: () => request('/cos-credential'),
 }

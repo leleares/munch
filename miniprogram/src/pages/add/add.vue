@@ -4,7 +4,8 @@ import { onShow } from "@dcloudio/uni-app";
 import { useMenuStore } from "../../stores/menu";
 import { useUserStore } from "../../stores/user";
 import { API_BASE_URL, API_PREFIX, USE_CLOUD_CONTAINER } from "../../config";
-import { getToken, request } from "../../api/request";
+import { getToken } from "../../api/request";
+import { uploadToCos } from "../../api/cos";
 
 const menu = useMenuStore();
 const user = useUserStore();
@@ -88,8 +89,27 @@ function pickIcon(i) {
   imageUrl.value = "";
 }
 
+// 轻度压缩：仅为省流量/加速，不再是为了绕通道限制（直传 COS 无包体上限）。
+// 宽度放宽到 1600，压不动就直接用原图。
+function compressForUpload(src) {
+  return new Promise((resolve) => {
+    // #ifdef MP-WEIXIN
+    wx.compressImage({
+      src,
+      quality: 80,
+      compressedWidth: 1600,
+      success: (r) => resolve(r.tempFilePath),
+      fail: () => resolve(src),
+    });
+    return;
+    // #endif
+    // eslint-disable-next-line no-unreachable
+    resolve(src);
+  });
+}
+
 // 上传照片：
-//  - 云托管：chooseImage(压缩) → 读成 base64 → callContainer 打 /upload-base64（自动带 X-WX-OPENID）
+//  - 云托管：chooseImage →（轻压）→ COS 直传（不经过 callContainer，无大小限制）
 //  - H5/本地：chooseImage → uploadFile multipart 打 /upload
 function choosePhoto() {
   // #ifdef MP-WEIXIN
@@ -97,32 +117,20 @@ function choosePhoto() {
     uni.chooseImage({
       count: 1,
       sizeType: ["compressed"],
-      success: (res) => {
-        const filePath = res.tempFilePaths[0];
-        const ext = "." + (filePath.split(".").pop() || "jpg").toLowerCase();
+      success: async (res) => {
         uni.showLoading({ title: "上传中…" });
-        uni.getFileSystemManager().readFile({
-          filePath,
-          encoding: "base64",
-          success: async (fr) => {
-            try {
-              const data = await request("/upload-base64", {
-                method: "POST",
-                data: { ext, data: fr.data },
-              });
-              imageUrl.value = data.imageUrl;
-              iconEmoji.value = "";
-            } catch (e) {
-              uni.showToast({ title: e.message || "上传失败", icon: "none" });
-            } finally {
-              uni.hideLoading();
-            }
-          },
-          fail: () => {
-            uni.hideLoading();
-            uni.showToast({ title: "读取图片失败", icon: "none" });
-          },
-        });
+        try {
+          const filePath = await compressForUpload(res.tempFilePaths[0]);
+          const ext = "." + (filePath.split(".").pop() || "jpg").toLowerCase();
+          const url = await uploadToCos(filePath, ext, user.user?.id);
+          if (!url) throw new Error("上传失败");
+          imageUrl.value = url;
+          iconEmoji.value = "";
+        } catch (e) {
+          uni.showToast({ title: e.message || "上传失败", icon: "none" });
+        } finally {
+          uni.hideLoading();
+        }
       },
     });
     return;

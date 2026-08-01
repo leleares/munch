@@ -8,6 +8,7 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.2.3
 	github.com/joho/godotenv v1.5.1
 	github.com/tencentyun/cos-go-sdk-v5 v0.7.75
+	github.com/tencentyun/qcloud-cos-sts-sdk v0.0.0-20251226100129-1701383cae15
 	gorm.io/driver/mysql v1.5.7
 	gorm.io/gorm v1.25.12
 )

@@ -72,7 +72,8 @@ func Setup(db *gorm.DB, cfg *config.Config, h *handler.Handler) *gin.Engine {
 
 			// 图片上传
 			auth.POST("/upload", h.Upload)             // multipart（H5/本地）
-			auth.POST("/upload-base64", h.UploadBase64) // base64（云托管 callContainer）
+			auth.POST("/upload-base64", h.UploadBase64) // base64（云托管 callContainer，仅小图）
+			auth.GET("/cos-credential", h.COSCredential) // COS 临时密钥（小程序直传大图）
 		}
 	}
 

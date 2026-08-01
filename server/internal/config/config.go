@@ -38,6 +38,9 @@ type Config struct {
 	COSSecretID  string
 	COSSecretKey string
 	COSBucketURL string
+	COSRegion    string // 如 ap-beijing；不配则从 BucketURL 自动解析
+	COSAppID     string // 如 1330007488；不配则从 bucket 名后缀自动解析
+	COSBucket    string // 完整桶名，如 ares1-1330007488；从 BucketURL 自动解析
 }
 
 // Load 读取 .env（若存在）后从环境变量装配配置。
@@ -70,6 +73,8 @@ func Load() *Config {
 		COSSecretID:  os.Getenv("COS_SECRET_ID"),
 		COSSecretKey: os.Getenv("COS_SECRET_KEY"),
 		COSBucketURL: os.Getenv("COS_BUCKET_URL"),
+		COSRegion:    os.Getenv("COS_REGION"),
+		COSAppID:     os.Getenv("COS_APPID"),
 	}
 
 	// 容错：不少人会把 "host:port" 整个填进 DB_HOST，
@@ -78,7 +83,43 @@ func Load() *Config {
 		c.DBHost = host
 		c.DBPort = port
 	}
+
+	// 从 COS_BUCKET_URL 自动解析 bucket / region / appid，省得再单独配。
+	// 形如 https://ares1-1330007488.cos.ap-beijing.myqcloud.com
+	//   bucket = ares1-1330007488, region = ap-beijing, appid = 1330007488
+	if bucket, region := parseCOSBucketURL(c.COSBucketURL); bucket != "" {
+		c.COSBucket = bucket
+		if c.COSRegion == "" {
+			c.COSRegion = region
+		}
+		if c.COSAppID == "" {
+			if i := strings.LastIndex(bucket, "-"); i >= 0 {
+				c.COSAppID = bucket[i+1:]
+			}
+		}
+	}
 	return c
+}
+
+// parseCOSBucketURL 从桶访问域名里拆出 bucket 与 region。
+// 期望域名形如 <bucket>.cos.<region>.myqcloud.com，解析不出则返回空串。
+func parseCOSBucketURL(raw string) (bucket, region string) {
+	if raw == "" {
+		return "", ""
+	}
+	host := raw
+	if i := strings.Index(host, "://"); i >= 0 {
+		host = host[i+3:]
+	}
+	if i := strings.IndexAny(host, "/:"); i >= 0 {
+		host = host[:i]
+	}
+	// host = ares1-1330007488.cos.ap-beijing.myqcloud.com
+	parts := strings.Split(host, ".")
+	if len(parts) >= 3 && parts[1] == "cos" {
+		return parts[0], parts[2]
+	}
+	return "", ""
 }
 
 // splitHostPort 识别 "host:port" 形式，端口必须是纯数字才认。

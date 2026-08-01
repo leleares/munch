@@ -30,3 +30,10 @@ export const FONT_FAMILY = "LXGW WenKai TC";
 // 本地开发想切回去，改成 API_BASE_URL + "/assets/fonts/lxgw-wenkai-tc-subset.woff2" 即可。
 export const FONT_URL =
   "https://munch-server-286616-10-1457919674.sh.run.tcloudbase.com/assets/fonts/lxgw-wenkai-tc-subset.woff2";
+
+// ---- COS 图片直传（非机密信息，密钥仍由后端 STS 签发）----
+// 桶名和地域是公开信息，放前端只为直传时拼参数；SecretId/Key 绝不放这里。
+// 域名 ares1-1330007488.cos.ap-beijing.myqcloud.com 需加进小程序后台
+// 「uploadFile 合法域名」（直传）和「downloadFile 合法域名」（显示图）。
+export const COS_BUCKET = "ares1-1330007488";
+export const COS_REGION = "ap-beijing";

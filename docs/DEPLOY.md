@@ -153,26 +153,33 @@ npm run build:mp-weixin      # 产物在 dist/build/mp-weixin
 
 ---
 
-## 七、图片存储：接入腾讯云 COS
+## 七、图片存储：COS 直传（STS 临时密钥）
 
-图片走独立 COS 桶（`ares1-1330007488` / `ap-beijing`），web、native、小程序三端都能直接用返回的 URL。上传链路：
+图片走独立 COS 桶（`ares1-1330007488` / `ap-beijing`），web、native、小程序三端都能直接用返回的 URL。
+
+**小程序为什么不走后端中继**：`callContainer` 是 JSON 通道，图片得转 base64，而它对单次请求包体有限制（约几 MB，报错码 `-606001`），手机相册动辄 5~10MB 的图必然超限。所以小程序采用**前端直传**：图片二进制直接 PUT 到 COS，不过后端、不过 callContainer，无大小限制。
+
+上传链路：
 
 ```
-小程序：chooseImage(压缩) → base64 → callContainer POST /api/upload-base64
-                                              ↓ 后端 decode
-H5/本地：chooseImage → uploadFile(multipart) → POST /api/upload
-                                              ↓
-                                     Go 后端转存 COS（munch/ 前缀）→ 返回公开 URL
+小程序：chooseImage →（轻压，仅省流量）→ cos-wx-sdk-v5 直传 COS
+            ↑ 拿临时密钥
+        GET /api/cos-credential  ← 走 callContainer（body 空，无包体问题，自动带 X-WX-OPENID 认人）
+            ↓ 后端用永久密钥 + policy 换 15 分钟临时密钥（只能 PutObject 到 munch/*）
+
+H5/本地：chooseImage → uploadFile(multipart) → POST /api/upload → 后端转存 COS
 ```
 
-> 为什么小程序走 base64：`callContainer` 是 JSON 通道，不支持 multipart 文件流；而 `uni.uploadFile` 打公网域名又拿不到平台注入的 `X-WX-OPENID`。base64 走 JSON body 两全其美，同时免备案、自动认人。
+> 核心安全点：**永久密钥只在后端**；前端拿到的是 15 分钟过期、只能上传本桶 `munch/` 前缀的临时密钥，反编译也无危害。这是图床/网盘的主流做法。
 
 ### 1. 建子用户密钥（别用主账号密钥）
 
-SecretId/SecretKey 是**腾讯云账号级全局密钥**，能操作名下所有服务，泄露风险大。推荐：
+SecretId/SecretKey 是**腾讯云账号级全局密钥**，泄露风险大。推荐建子用户：
 
 1. 腾讯云控制台 → **访问管理 CAM → 用户 → 新建用户**（子用户）
-2. 只授权 `ares1-1330007488` 这一个桶的读写（`QcloudCOSDataFullControl`，或用策略生成器精确到该桶）
+2. 授权两项权限：
+   - `QcloudCOSDataFullControl`（或用策略生成器精确到 `ares1-1330007488` 桶的读写）
+   - **`sts:GetFederationToken`**（签发临时密钥必需，漏了这个直传会 403）——可加 `QcloudSTSFullAccess`，或在策略里单独放行该 action
 3. 拿到该子用户的 **SecretId / SecretKey**
 
 ### 2. 桶设为公有读
@@ -190,15 +197,31 @@ munch-server 服务 → 新版本 → 环境变量：
 | `COS_SECRET_KEY` | 子用户 SecretKey |
 | `COS_BUCKET_URL` | `https://ares1-1330007488.cos.ap-beijing.myqcloud.com` |
 
-### 4. 小程序后台加 downloadFile 合法域名
+> `COS_REGION`（ap-beijing）和 `COS_APPID`（1330007488）会从 `COS_BUCKET_URL` 自动解析，不用单独配。
 
-开发管理 → 开发设置 → 服务器域名 → **`downloadFile` 合法域名**加：
-`ares1-1330007488.cos.ap-beijing.myqcloud.com`
-否则真机 `<image>` 显示不出图。
+### 4. 小程序后台加合法域名
 
-**验证**：加新菜 → 上传照片 → 后端日志出现 `[storage] 使用腾讯云 COS 存储图片`；返回的 `imageUrl` 直接在浏览器能打开。
+开发管理 → 开发设置 → 服务器域名，给 `ares1-1330007488.cos.ap-beijing.myqcloud.com` **同时加两处**：
 
-> COS 在**北京**、云托管在**上海**，跨地域走公网上传（非内网），小流量无感知，只是不享受内网免流量。
+- **`uploadFile` 合法域名** ← 直传上传用
+- **`downloadFile` 合法域名** ← `<image>` 显示图用
+
+漏了 uploadFile 会传不上去，漏了 downloadFile 会显示不出。
+
+### 5. 前端配置
+
+`miniprogram/src/config.js` 里已内置（非机密，可放前端）：
+
+```js
+export const COS_BUCKET = "ares1-1330007488";
+export const COS_REGION = "ap-beijing";
+```
+
+换桶时改这两个 + 后端 `COS_BUCKET_URL` 即可。
+
+**验证**：加新菜 → 拍照或选相册大图上传 → 开发者工具 Console 出现 `🐶 COS 上传成功 https://...`；该 URL 浏览器能直接打开；菜品卡片能显示图。
+
+> COS 在**北京**、云托管在**上海**，签发密钥走公网（流量极小，无感知）；图片直传是小程序↔COS 直连，也不经过云托管。
 
 ### 🟡 其余待补（不影响上线）
 
@@ -232,4 +255,5 @@ munch-server 服务 → 新版本 → 环境变量：
 | 字体没生效、控制台报加载失败 | 域名没加进 `downloadFile` 合法域名，或 `FONT_URL` 还指着 `127.0.0.1` |
 | 提示「还没有情侣空间」 | 正常，去绑定页创建或加入 |
 | 上传照片成功但图显示不出 | COS 桶没设公有读，或域名没加进 `downloadFile` 合法域名（第七节 2/4） |
-| 日志显示「回退到本地磁盘」 | COS 变量没填全，或 SecretId/Key 错（第七节 3） |
+| 上传报「上传失败」/ 域名不合法 | 域名没加进 `uploadFile` 合法域名（第七节 4） |
+| 上传报 403 / 获取临时密钥失败 | 子用户少了 `sts:GetFederationToken` 权限，或 policy 资源写错（第七节 1） |
