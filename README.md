@@ -88,9 +88,9 @@ npm run dev:mp-weixin   # 产物在 dist/dev/mp-weixin，用微信开发者工�
 
 1. 开通云托管 → 建环境（记环境 ID）→ 建 MySQL 实例 → **手动 `CREATE DATABASE munch`**（平台不会自动建库）。
 2. 新建服务 `munch-server`，构建上下文 `server`、Dockerfile `server/Dockerfile`、监听 `80`。
-3. 配环境变量 `JWT_SECRET`、`DB_NAME=munch`；**`ALLOW_DEV_LOGIN` 绝不能配到线上**。
-4. 开启公网访问 → 域名加进小程序后台 `downloadFile` 合法域名（字体要用）。
-5. 前端 `config.js` 设 `USE_CLOUD_CONTAINER=true` + `CLOUD_ENV` + `CLOUD_SERVICE` + 公网 `FONT_URL`，编译上传体验版。
+3. 配环境变量 `JWT_SECRET`、`DB_NAME=munch`、COS 相关（`COS_SECRET_ID/KEY`、`COS_BUCKET_URL`）；**`ALLOW_DEV_LOGIN` 绝不能配到线上**。
+4. 开启公网访问 → 服务域名加进小程序后台 `downloadFile` 合法域名（字体要用）；COS 桶域名加进 `uploadFile`（直传）+ `downloadFile`（显示图）合法域名。
+5. 前端 `config.js` 设 `USE_CLOUD_CONTAINER=true` + `CLOUD_ENV` + `CLOUD_SERVICE` + 公网 `FONT_URL` + `COS_BUCKET/REGION`，编译上传体验版。
 
 > `callContainer` 调用免备案；平台自动注入 `X-WX-OPENID`，后端据此识别用户，无需自己做 code2session。
 
@@ -108,7 +108,8 @@ npm run dev:mp-weixin   # 产物在 dist/dev/mp-weixin，用微信开发者工�
 | GET/POST | `/orders` | 下单（items 存快照）/ 列表 |
 | PATCH | `/orders/:id/status` | 大厨推进：待接单→备菜中→已上菜（服务端强制状态机） |
 | GET/POST/PATCH/DELETE | `/shop-items` `/shop-items/:id` | 买菜清单 |
-| POST | `/upload` | 图片上传（local 落磁盘 / cos 上云） |
+| GET | `/cos-credential` | 签发 15 分钟 COS 临时密钥（小程序直传大图用，主路径） |
+| POST | `/upload` · `/upload-base64` | 图片上传兜底：multipart（H5/本地）/ base64（仅小图） |
 
 数据全部按 `coupleId` 隔离——两个人绑到同一情侣空间才能看到彼此的菜与单。
 
@@ -123,10 +124,10 @@ npm run dev:mp-weixin   # 产物在 dist/dev/mp-weixin，用微信开发者工�
 - ✅ 图标资产接入（TabBar 两态 / 双端 FAB / chevron）
 - ✅ 霞鹜文楷子集化（3894 字 / 971KB）+ `loadFontFace` 接入
 - ✅ 核心动效：转盘老虎机抽奖、加菜飞入购物车弧线（并发）、抽屉 slideUp、弹窗 pop、购物车回弹
-- ✅ 安全：`/login` 裸 openid 后门收口到 `ALLOW_DEV_LOGIN`，默认关闭
+- ✅ 图片上传接 COS：小程序走「后端签发 STS 临时密钥 → 前端直传 COS」，避开 `callContainer` 包体限制（真机拍照/相册大图都能传），H5 走 multipart 兜底
+- ✅ 安全：`/login` 裸 openid 后门收口到 `ALLOW_DEV_LOGIN`，默认关闭；永久密钥只在后端，前端仅拿 15 分钟且限 `munch/*` 写权限的临时密钥
 
 **待补**
-- ⏳ 图片上传接 COS（`server/internal/storage` 留了驱动位；未接前照片存容器磁盘，重部署会丢）
 - ⏳ 煮锅加载动画、自定义 Toast、长按 480ms+震动、记录页 Tab fade
 - ⏳ 标题字重 700（当前只加载 Regular，为伪粗；需再传 Medium 字重）
 - ⏳ 可选：菜名 AI 配图（见交接文档第九节，key 放后端）
