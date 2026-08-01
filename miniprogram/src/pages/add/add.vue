@@ -41,12 +41,34 @@ const newGroup = ref("");
 // 长按分组进入删除模式：所有分组 tag 右侧出现 × ，点 × 二次确认后删除
 const groupEditMode = ref(false);
 
+// add 是 tabBar 页，长按编辑用 switchTab 跳过来（只触发 onShow，不触发 onLoad），
+// 所以表单初始化只能放 onShow。难点：onShow 也会在「切后台再切回」时触发，
+// 那种情况绝不能动表单，否则用户填一半切个抖音回来就没了（用户报的重大 bug）。
+//
+// 关键：区分「切后台回前台」和「页面内导航」。
+//   - App 切后台再回来 → wx.onAppHide/onAppShow 会触发 → 标记 fromBackground
+//   - tab 切换 / 长按编辑跳进来 → App 一直在前台，上述回调不触发
+// 于是 onShow 里：fromBackground 为真就啥都不做（纯保留）；否则按 editingId 走。
+let fromBackground = false;
+// #ifdef MP-WEIXIN
+wx.onAppHide(() => {
+  fromBackground = true;
+});
+// #endif
+
 onShow(async () => {
   if (!user.hasCouple) {
     uni.reLaunch({ url: "/pages/bind/bind" });
     return;
   }
-  groupEditMode.value = false; // 每次进页面都退出删除模式，避免误删
+
+  // 切后台回前台：保留用户正在填的内容，什么都不重置
+  if (fromBackground) {
+    fromBackground = false;
+    return;
+  }
+
+  groupEditMode.value = false; // 页面内进来才退出删除模式，避免误删
   if (!menu.groups.length) await menu.loadAll();
 
   if (menu.editingId) {
@@ -65,6 +87,7 @@ onShow(async () => {
     }
     menu.editingId = null;
   } else {
+    // 以「加新菜」姿态进来（首次进入 / 点 tab）：给一张干净表单
     resetForm();
   }
 });
