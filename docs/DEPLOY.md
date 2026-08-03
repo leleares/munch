@@ -106,7 +106,7 @@ CREATE DATABASE IF NOT EXISTS munch
 `https://<你的域名>/assets/fonts/lxgw-wenkai-tc-subset.woff2`
 能下载到约 971KB 的文件即成功。
 
-> 走 `callContainer` 的**接口调用不需要**配 request 合法域名；这里配域名**只为字体（和将来的图片）能被 downloadFile/image 加载**。
+> 走 `callContainer` 的**接口调用不需要**配 request 合法域名；这里配**服务域名**只为字体能被 `loadFontFace` 加载。图片不走这个域名——它直传到 COS 桶，桶域名在第七节单独配。
 
 ---
 
@@ -124,6 +124,7 @@ export const FONT_URL = "https://<你的域名>/assets/fonts/lxgw-wenkai-tc-subs
 ```
 
 > `API_BASE_URL` 在云托管模式下不再用于接口调用，留着给本地开发切回去用。
+> 图片直传用的 `COS_BUCKET` / `COS_REGION` 已内置在 `config.js`，换桶时才需改（见第七节 5）。
 
 ### 2. 编译并上传
 

@@ -5,6 +5,7 @@ import { useUserStore } from "../../stores/user";
 import { useMenuStore } from "../../stores/menu";
 import { useCartStore } from "../../stores/cart";
 import { useOrderStore } from "../../stores/order";
+import BottomSheet from "../../components/BottomSheet/BottomSheet.vue";
 
 const user = useUserStore();
 const menu = useMenuStore();
@@ -116,7 +117,7 @@ function runFly(dish) {
   q.exec((res) => {
     const t = res && res[0];
     const s = res && res[1];
-    if (!t || !s) return; // 拿不到坐标就跳过动画，不影响加购
+    if (!t || !s) return; // 拿不到坐标就跳过动画,不影响加购
 
     const sx = s.left + s.width / 2;
     const sy = s.top + s.height / 2;
@@ -233,8 +234,9 @@ function toast(t) {
     </view>
 
     <scroll-view scroll-y class="scroll">
-      <!-- 问候语 -->
-      <view class="greet">
+      <view class="scroll-inner">
+        <!-- 问候语 -->
+        <view class="greet">
         <text class="greet-title">{{ greeting }}</text>
         <text class="greet-sub">想吃什么都记下来，我一样样做给你 🌿</text>
       </view>
@@ -308,6 +310,7 @@ function toast(t) {
         >
       </view>
       <view style="height: 200rpx" />
+      </view>
     </scroll-view>
 
     <!-- 购物车条 -->
@@ -322,35 +325,33 @@ function toast(t) {
     </view>
 
     <!-- 购物车抽屉 -->
-    <view v-if="drawer" class="mask" @tap="drawer = false">
-      <view class="sheet" @tap.stop>
-        <view class="sheet-handle" />
-        <view class="sheet-head">
-          <text class="sheet-title">我点的菜 · {{ cart.count }} 道</text>
-          <text class="sheet-close" @tap="drawer = false">×</text>
-        </view>
-        <scroll-view scroll-y class="sheet-list">
-          <view
-            v-for="d in menu.dishes.filter((x) => cart.qtyOf(x.id))"
-            :key="d.id"
-            class="sheet-item"
-          >
-            <view class="sheet-thumb" :style="thumbStyle(d)">
-              <text v-if="d.iconEmoji" class="thumb-emoji sm">{{
-                d.iconEmoji
-              }}</text>
-            </view>
-            <view class="sheet-mid">
-              <text class="dish-name">{{ d.name }}</text>
-              <text class="dish-spice">{{ cart.noteText(d.id, d.spice) }}</text>
-            </view>
-            <view class="stepper">
-              <text class="step" @tap="cart.dec(d.id)">−</text>
-              <text class="qty">{{ cart.qtyOf(d.id) }}</text>
-              <text class="step" @tap="cart.inc(d.id)">＋</text>
-            </view>
+    <BottomSheet v-model:visible="drawer" title="">
+      <template #header>
+        <text class="sheet-title">我点的菜 · {{ cart.count }} 道</text>
+      </template>
+      <scroll-view scroll-y class="cart-list">
+        <view
+          v-for="d in menu.dishes.filter((x) => cart.qtyOf(x.id))"
+          :key="d.id"
+          class="cart-item"
+        >
+          <view class="sheet-thumb" :style="thumbStyle(d)">
+            <text v-if="d.iconEmoji" class="thumb-emoji sm">{{
+              d.iconEmoji
+            }}</text>
           </view>
-        </scroll-view>
+          <view class="sheet-mid">
+            <text class="dish-name">{{ d.name }}</text>
+            <text class="dish-spice">{{ cart.noteText(d.id, d.spice) }}</text>
+          </view>
+          <view class="stepper">
+            <text class="step" @tap="cart.dec(d.id)">−</text>
+            <text class="qty">{{ cart.qtyOf(d.id) }}</text>
+            <text class="step" @tap="cart.inc(d.id)">＋</text>
+          </view>
+        </view>
+      </scroll-view>
+      <template #footer>
         <textarea
           class="mc-input note"
           :value="cart.msg"
@@ -360,8 +361,8 @@ function toast(t) {
         <view class="mc-btn full" @tap="placeOrder"
           >下单 · 让大厨开火 🍳（{{ cart.count }} 道）</view
         >
-      </view>
-    </view>
+      </template>
+    </BottomSheet>
 
     <!-- 飞入购物车的飞行块（可并发多个） -->
     <view v-for="f in flyers" :key="f.id" class="flyer" :style="flyerStyle(f)">
@@ -421,8 +422,10 @@ function toast(t) {
 }
 .scroll {
   height: 100%;
-  padding: 0 $page-pad;
   box-sizing: border-box;
+}
+.scroll-inner {
+  padding: 0 $page-pad;
 }
 
 /* FAB */
@@ -510,6 +513,9 @@ function toast(t) {
 .cats {
   white-space: nowrap;
   margin-bottom: 24rpx;
+}
+.cats ::-webkit-scrollbar {
+  display: none; /* 隐藏横向滚动条 */
 }
 .cat {
   margin-right: 16rpx;
@@ -656,56 +662,11 @@ function toast(t) {
   font-size: 28rpx;
 }
 
-/* 遮罩 & 抽屉 */
-.mask {
-  position: fixed;
-  inset: 0;
-  background: $mask;
-  z-index: 100;
-  display: flex;
-  align-items: flex-end;
+/* 购物车抽屉内容 */
+.cart-list {
+  max-height: 50vh;
 }
-.mask.center {
-  align-items: center;
-  justify-content: center;
-}
-.sheet {
-  width: 100%;
-  background: $screen-bg;
-  border-radius: 40rpx 40rpx 0 0;
-  padding: 24rpx $page-pad 40rpx;
-  box-sizing: border-box;
-  max-height: 80vh;
-  display: flex;
-  flex-direction: column;
-  animation: slideUp 0.3s ease-out;
-}
-.sheet-handle {
-  width: 72rpx;
-  height: 8rpx;
-  border-radius: 8rpx;
-  background: #d8d3c4;
-  margin: 0 auto 20rpx;
-}
-.sheet-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 20rpx;
-}
-.sheet-title {
-  font-size: 32rpx;
-  font-weight: 700;
-  color: $text-title;
-}
-.sheet-close {
-  font-size: 48rpx;
-  color: $text-weak;
-}
-.sheet-list {
-  max-height: 44vh;
-}
-.sheet-item {
+.cart-item {
   display: flex;
   align-items: center;
   padding: 16rpx 0;
@@ -725,8 +686,13 @@ function toast(t) {
   flex: 1;
   margin: 0 20rpx;
 }
+.sheet-title {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: $text-title;
+}
 .note {
-  margin: 24rpx 0;
+  margin-bottom: 24rpx;
   height: 120rpx;
   padding: 22rpx 26rpx;
   line-height: 1.5;
@@ -736,6 +702,17 @@ function toast(t) {
 }
 
 /* 随机弹窗 */
+.mask {
+  position: fixed;
+  inset: 0;
+  background: $mask;
+  z-index: 100;
+}
+.mask.center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 .random {
   width: 80%;
   background: $card-bg;
@@ -838,9 +815,6 @@ function toast(t) {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition:
-    transform 0.05s linear,
-    opacity 0.05s linear;
 }
 .flyer-emoji {
   font-size: 48rpx;
@@ -883,14 +857,6 @@ function toast(t) {
   100% {
     transform: scale(1);
     opacity: 1;
-  }
-}
-@keyframes slideUp {
-  0% {
-    transform: translateY(100%);
-  }
-  100% {
-    transform: translateY(0);
   }
 }
 @keyframes cart-bump {
